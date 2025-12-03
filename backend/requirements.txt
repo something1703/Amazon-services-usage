@@ -1,0 +1,6 @@
+boto3
+jinja2
+python-dotenv
+Levenshtein
+pdfkit
+requests

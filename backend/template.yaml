@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Career Copilot MVP
+
+Globals:
+  Function:
+    Runtime: python3.9
+    Timeout: 30
+    MemorySize: 1024
+    Environment:
+      Variables:
+        S3_BUCKET_UPLOADS: !Ref UploadsBucket
+        S3_BUCKET_OUTPUTS: !Ref OutputsBucket
+        USERS_TABLE: !Ref UsersTable
+        RESUMES_TABLE: !Ref ResumesTable
+        AWS_REGION: !Ref AWS::Region
+
+Resources:
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub career-copilot-uploads-${AWS::AccountId}
+      VersioningConfiguration:
+        Status: Enabled
+
+  OutputsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub career-copilot-outputs-${AWS::AccountId}
+      VersioningConfiguration:
+        Status: Enabled
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub CareerCopilot-Users-${AWS::AccountId}
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  ResumesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub CareerCopilot-Resumes-${AWS::AccountId}
+      AttributeDefinitions:
+        - AttributeName: resumeId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: resumeId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  RekognitionLoginFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/rekognition_login.lambda_handler
+      CodeUri: .
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - S3CrudPolicy:
+            BucketName: !Ref UploadsBucket
+      Events:
+        RekLoginApi:
+          Type: Api
+          Properties:
+            Path: /login/face
+            Method: post
+
+  SignupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/auth.lambda_handler
+      CodeUri: .
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref UploadsBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        SignupApi:
+          Type: Api
+          Properties:
+            Path: /signup
+            Method: post
+
+  InterviewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/interview.lambda_handler
+      CodeUri: .
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref OutputsBucket
+      Events:
+        InterviewApi:
+          Type: Api
+          Properties:
+            Path: /interview/generate
+            Method: post
+
+  ResumeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/resume.lambda_handler
+      CodeUri: .
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref OutputsBucket
+      Events:
+        ResumeApi:
+          Type: Api
+          Properties:
+            Path: /resume/generate
+            Method: post
+
+  VerificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/verification.lambda_handler
+      CodeUri: .
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref UploadsBucket
+      Events:
+        VerifyApi:
+          Type: Api
+          Properties:
+            Path: /verify
+            Method: post

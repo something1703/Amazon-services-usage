@@ -5,11 +5,37 @@ export default function AuthSection({ onLoginSuccess }) {
   const [userId, setUserId] = useState('');
   const [name, setName] = useState('');
   const [refImage, setRefImage] = useState(null);
+  const [refImagePreview, setRefImagePreview] = useState(null);
   const [loginImage, setLoginImage] = useState(null);
+  const [loginImagePreview, setLoginImagePreview] = useState(null);
   const [signupResponse, setSignupResponse] = useState(null);
   const [loginResponse, setLoginResponse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const handleRefImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setRefImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setRefImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLoginImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLoginImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLoginImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSignup = async () => {
     if (!userId.trim() || !refImage) {
@@ -77,7 +103,6 @@ export default function AuthSection({ onLoginSuccess }) {
       setLoginResponse(data);
       
       if (data.success && response.ok) {
-        // Notify parent component of successful login
         onLoginSuccess?.(userId.trim(), data.token);
       } else {
         setError(`Login failed. Similarity: ${data.similarity}%`);
@@ -120,22 +145,32 @@ export default function AuthSection({ onLoginSuccess }) {
         <h3>Signup - Upload Reference Image</h3>
         <p className="help-text">Upload a clear selfie for registration</p>
         
-        <div className="file-input-wrapper">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setRefImage(e.target.files[0])}
-            className="file-input"
-            id="ref-image"
-          />
-          <label htmlFor="ref-image" className="file-label">
-            {refImage ? refImage.name : 'Choose reference image'}
-          </label>
-        </div>
+        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1 }}>
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleRefImageChange}
+                className="file-input"
+                id="ref-image"
+              />
+              <label htmlFor="ref-image" className="file-label">
+                {refImage ? refImage.name : 'Choose reference image'}
+              </label>
+            </div>
 
-        <button onClick={handleSignup} disabled={loading} className="button primary">
-          {loading ? 'Processing...' : 'Sign Up'}
-        </button>
+            <button onClick={handleSignup} disabled={loading} className="button primary">
+              {loading ? 'Processing...' : 'Sign Up'}
+            </button>
+          </div>
+
+          {refImagePreview && (
+            <div className="image-preview">
+              <img src={refImagePreview} alt="Reference preview" />
+            </div>
+          )}
+        </div>
 
         {signupResponse && (
           <div className="response-box success">
@@ -152,22 +187,32 @@ export default function AuthSection({ onLoginSuccess }) {
         <h3>Login - Verify Your Face</h3>
         <p className="help-text">Upload a selfie to authenticate</p>
         
-        <div className="file-input-wrapper">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setLoginImage(e.target.files[0])}
-            className="file-input"
-            id="login-image"
-          />
-          <label htmlFor="login-image" className="file-label">
-            {loginImage ? loginImage.name : 'Choose login image'}
-          </label>
-        </div>
+        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1 }}>
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLoginImageChange}
+                className="file-input"
+                id="login-image"
+              />
+              <label htmlFor="login-image" className="file-label">
+                {loginImage ? loginImage.name : 'Choose login image'}
+              </label>
+            </div>
 
-        <button onClick={handleLogin} disabled={loading} className="button primary">
-          {loading ? 'Verifying...' : 'Login'}
-        </button>
+            <button onClick={handleLogin} disabled={loading} className="button primary">
+              {loading ? 'Verifying...' : 'Login'}
+            </button>
+          </div>
+
+          {loginImagePreview && (
+            <div className="image-preview">
+              <img src={loginImagePreview} alt="Login preview" />
+            </div>
+          )}
+        </div>
 
         {loginResponse && (
           <div className={`response-box ${loginResponse.success ? 'success' : 'error'}`}>
